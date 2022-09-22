@@ -12,7 +12,6 @@ export class PaddleBallComponent implements OnInit {
 
   paddle: Body = Bodies.rectangle(this.gameWidth/2, this.gameHeight-50, 200, 20, {inertia: Infinity, inverseInertia: 1/Infinity, isStatic: true});
   ball: Body = Bodies.circle(this.gameWidth/2, 500, 10, {restitution: 1, frictionAir: 0, friction: 0, inertia: Infinity, inverseInertia: 1/Infinity});
-  box: Body = Bodies.rectangle(this.gameWidth/4, 200, 40,40,{isStatic: true});
 
   runner: Runner = Runner.create();
   
@@ -33,8 +32,15 @@ export class PaddleBallComponent implements OnInit {
   constructor() {}
 
   ngOnInit(): void {
-    let gameBox = this.box;
     let gameBall = this.ball;
+
+    const level: Body[] = [];
+
+    for (let i = 0; i < 5; i++) {
+      for (let n = 0; n < 24; n++) {
+        level.push(Bodies.rectangle((n+1)*50 + 25, 100 + (i*20), 50, 20, {isStatic: true}));
+      }
+    }
 
     //create engine and disable gravity
     const engine: Engine = Engine.create();
@@ -51,22 +57,26 @@ export class PaddleBallComponent implements OnInit {
     });
 
     //create components array
-    const components: Array<Body | Composite | Constraint | MouseConstraint> = [];
+    let components: Array<Body | Composite | Constraint | MouseConstraint> = [];
 
     //create boundaries and push then to the components array
     const ceiling: Body = Bodies.rectangle(this.gameWidth/2, 0, this.gameWidth, 60, {isStatic: true});
-    const floor: Body = Bodies.rectangle(this.gameWidth/2, this.gameHeight, this.gameWidth, 60, {isStatic: true, isSensor: true,});
+    const floor: Body = Bodies.rectangle(this.gameWidth/2, this.gameHeight, this.gameWidth, 60, {isStatic: true, isSensor: true});
     const leftWall: Body = Bodies.rectangle(0, this.gameHeight/2, 60, this.gameHeight, {isStatic: true});
     const rightWall: Body = Bodies.rectangle(this.gameWidth, this.gameHeight/2, 60, this.gameHeight, {isStatic: true});
+
+    floor.render.visible = false;
 
     components.push(ceiling, floor, leftWall, rightWall);
 
     // push ball and paddle to the components array
-    components.push(this.ball, this.paddle, this.box);
+    components.push(this.ball, this.paddle);
 
     //create mouseConstraint and push it to the components array
     const mouseConstraint: MouseConstraint = MouseConstraint.create(engine, {mouse: Mouse.create(render.canvas)});
     components.push(mouseConstraint);
+
+    components = components.concat(level);
 
     // add components to the world
     Composite.add(engine.world, components);
@@ -82,7 +92,7 @@ export class PaddleBallComponent implements OnInit {
       length = e.pairs.length;
       for(i = 0; i<length; i++){
         pair = e.pairs[i];
-        if(pair.bodyA === gameBall && pair.bodyB === gameBox ){
+        if(pair.bodyA === gameBall && level.includes(pair.bodyB) ){
           World.remove(engine.world, pair.bodyB);
         }
       }
