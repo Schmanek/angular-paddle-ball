@@ -1,5 +1,5 @@
 import { Component, EventEmitter, HostListener, OnInit } from '@angular/core';
-import { Bodies, Body, Composite, Engine, Render, Runner, Constraint, MouseConstraint, Mouse, Vector, Events} from 'matter-js';
+import { Bodies, Body, Composite, Engine, Render, Runner, Constraint, MouseConstraint, Mouse, Vector, Events, World, Collision, IEventCollision} from 'matter-js';
 
 @Component({
   selector: 'app-paddle-ball',
@@ -12,6 +12,7 @@ export class PaddleBallComponent implements OnInit {
 
   paddle: Body = Bodies.rectangle(this.gameWidth/2, this.gameHeight-50, 200, 20, {inertia: Infinity, inverseInertia: 1/Infinity, isStatic: true});
   ball: Body = Bodies.circle(this.gameWidth/2, 500, 10, {restitution: 1, frictionAir: 0, friction: 0, inertia: Infinity, inverseInertia: 1/Infinity});
+  box: Body = Bodies.rectangle(this.gameWidth/4, 200, 40,40,{isStatic: true});
 
   runner: Runner = Runner.create();
   
@@ -32,6 +33,9 @@ export class PaddleBallComponent implements OnInit {
   constructor() {}
 
   ngOnInit(): void {
+    let gameBox = this.box;
+    let gameBall = this.ball;
+
     //create engine and disable gravity
     const engine: Engine = Engine.create();
     engine.gravity.y = 0;
@@ -58,7 +62,7 @@ export class PaddleBallComponent implements OnInit {
     components.push(ceiling, floor, leftWall, rightWall);
 
     // push ball and paddle to the components array
-    components.push(this.ball, this.paddle);
+    components.push(this.ball, this.paddle, this.box);
 
     //create mouseConstraint and push it to the components array
     const mouseConstraint: MouseConstraint = MouseConstraint.create(engine, {mouse: Mouse.create(render.canvas)});
@@ -72,5 +76,16 @@ export class PaddleBallComponent implements OnInit {
 
     // run the engine
     Runner.run(this.runner, engine);
+
+    Events.on(engine, 'collisionEnd', function(e: IEventCollision<Engine>) {
+      var i, pair,
+      length = e.pairs.length;
+      for(i = 0; i<length; i++){
+        pair = e.pairs[i];
+        if(pair.bodyA === gameBall && pair.bodyB === gameBox ){
+          World.remove(engine.world, pair.bodyB);
+        }
+      }
+    });
   }
 }
